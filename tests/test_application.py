@@ -27,5 +27,5 @@ class TestApplication(unittest.TestCase):
 
     def test_extension_installed_and_fails(self):
         response = self.test_client.get('/failure')
-        self.assertEquals(response.status_code, 500)
+        self.assertEquals(response.status_code, 599)
         self.assertEquals(response.json['error_response'], 'MAX RETRIES')

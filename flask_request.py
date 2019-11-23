@@ -1,10 +1,18 @@
+import json
 import requests
 import urllib3
+
+__version__ = '0.0.1'
+
+DEFAULT_ACCEPT = 'application/json'
+DEFAULT_CONTENT_TYPE = 'application/json'
+DEFAULT_USER_AGENT = 'flask_request/{}'.format(__version__)
+DEFAULT_TIMEOUT = 3
 
 
 class RequestsSession(object):
     default_retry_codes = (429, 500, 502, 503, 504)
-    headers = {'User-Agent': 'flask_request / 1.0.0',
+    headers = {'User-Agent': 'flask_request/1.0.0',
                'Content-Type': 'application/json',
                'Accept': 'application/json'}
 
@@ -34,17 +42,34 @@ class RequestsSession(object):
             app.extensions = {}
             app.extensions['request'] = self
 
-    def http_fetch(self, url, method='GET', headers={}, data=None, timeout=3):
+    def http_fetch(self, url,
+                   method='GET',
+                   headers={},
+                   data=None,
+                   timeout=DEFAULT_TIMEOUT):
+
+        self.headers.update(headers)
+        body = self._http_serialize_request_data(data,
+                                                 self.headers['Content-Type'])
+
         try:
             response = self.session.request(url=url,
                                             method=method,
                                             headers=headers,
-                                            data=data,
+                                            data=body,
                                             timeout=timeout)
         except requests.exceptions.RetryError as error:
             response = requests.Response()
-            response.status_code = 500
+            response.status_code = 599
             response.reason = "MAX RETRIES"
             response._content = b'{}'
 
         return response
+
+    def _http_serialize_request_data(self, body, content_type):
+        if not body or not isinstance(body, dict):
+            return body
+
+        if content_type == DEFAULT_CONTENT_TYPE:
+            return json.dumps(body)
+        raise ValueError('Unsupported Content-Type')
