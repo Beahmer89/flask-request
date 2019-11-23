@@ -22,3 +22,8 @@ class TestApplication(unittest.TestCase):
         self.assertEquals(response.status_code, 200)
         self.assertEquals(response.json['external_service_data'],
                           fixtures.BODY['test_data'])
+
+    def test_extension_installed_and_fails(self):
+        response = self.test_client.get('/failure')
+        self.assertEquals(response.status_code, 500)
+        self.assertEquals(response.json['error_response'], 'MAX RETRIES')

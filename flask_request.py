@@ -8,13 +8,23 @@ class RequestsSession(object):
                'Content-Type': 'application/json',
                'Accept': 'application/json'}
 
-    def __init__(self, retries=3, backoff_factor=0.5, status_forcelist=(),
-                 app=None):
+    def __init__(self, app=None, retries=3, backoff_factor=0.5,
+                 status_forcelist=()):
         self.status_forcelist = status_forcelist or self.default_retry_codes
         self.backoff_factor = backoff_factor
         self.retries = retries
 
         self.session = requests.Session()
+        retry = urllib3.Retry(
+            status=self.retries,
+            backoff_factor=self.backoff_factor,
+            status_forcelist=self.status_forcelist)
+
+        adapter = requests.adapters.HTTPAdapter(max_retries=retry)
+
+        self.session.mount('http://', adapter)
+        self.session.mount('https://', adapter)
+        self.session.headers.update(self.headers)
 
         if app is not None:
             self.init_app(app)
@@ -25,9 +35,16 @@ class RequestsSession(object):
             app.extensions['request'] = self
 
     def http_fetch(self, url, method='GET', headers={}, data=None, timeout=3):
-        response = self.session.request(url=url,
-                                        method=method,
-                                        headers=headers,
-                                        data=data,
-                                        timeout=timeout)
+        try:
+            response = self.session.request(url=url,
+                                            method=method,
+                                            headers=headers,
+                                            data=data,
+                                            timeout=timeout)
+        except requests.exceptions.RetryError as error:
+            response = requests.Response()
+            response.status_code = 500
+            response.reason = "MAX RETRIES"
+            response._content = b'{}'
+
         return response
