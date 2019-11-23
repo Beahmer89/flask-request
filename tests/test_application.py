@@ -8,13 +8,15 @@ import flask_request
 
 class TestApplication(unittest.TestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         app = fixtures.application()
-        self.test_client = app.test_client()
+        cls.test_client = app.test_client()
 
     def test_extension_installed(self):
         self.assertIsInstance(self.test_client.application.request,
                               flask_request.RequestsSession)
+        self.assertEquals(self.test_client.application.request.retries, 1)
 
     def test_extension_installed_and_works(self):
         response = self.test_client.get('/success')
