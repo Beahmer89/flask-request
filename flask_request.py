@@ -18,6 +18,7 @@ class RequestsSession(object):
 
     def __init__(self, app=None, retries=3, backoff_factor=0.5,
                  status_forcelist=()):
+        self.app = app
         self.status_forcelist = status_forcelist or self.default_retry_codes
         self.backoff_factor = backoff_factor
         self.retries = retries
@@ -32,7 +33,6 @@ class RequestsSession(object):
 
         self.session.mount('http://', adapter)
         self.session.mount('https://', adapter)
-        self.session.headers.update(self.headers)
 
         if app is not None:
             self.init_app(app)
@@ -40,7 +40,7 @@ class RequestsSession(object):
     def init_app(self, app):
         if not hasattr(app, 'extensions'):
             app.extensions = {}
-            app.extensions['request'] = self
+        app.extensions['request'] = self
 
     def http_fetch(self, url,
                    method='GET',
@@ -49,13 +49,15 @@ class RequestsSession(object):
                    timeout=DEFAULT_TIMEOUT):
 
         self.headers.update(headers)
+        self._set_user_agent_header()
+        self.session.headers.update(self.headers)
+
         body = self._http_serialize_request_data(data,
                                                  self.headers['Content-Type'])
 
         try:
             response = self.session.request(url=url,
                                             method=method,
-                                            headers=headers,
                                             data=body,
                                             timeout=timeout)
         except requests.exceptions.RetryError as error:
@@ -73,3 +75,12 @@ class RequestsSession(object):
         if content_type == DEFAULT_CONTENT_TYPE:
             return json.dumps(body)
         raise ValueError('Unsupported Content-Type')
+
+    def _set_user_agent_header(self):
+        if hasattr(self.app, 'name'):
+            name = self.app.name
+            version = '0.0.0'
+            if hasattr(self.app, 'version'):
+                version = self.app.version
+
+            self.headers['User-Agent'] = '{}/{}'.format(name, version)

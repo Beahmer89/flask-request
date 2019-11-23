@@ -17,6 +17,9 @@ class TestApplication(unittest.TestCase):
         self.assertIsInstance(self.test_client.application.request,
                               flask_request.RequestsSession)
         self.assertEquals(self.test_client.application.request.retries, 1)
+        self.assertIsInstance(
+            self.test_client.application.extensions['request'],
+            flask_request.RequestsSession)
 
     def test_extension_installed_and_works(self):
         response = self.test_client.get('/success')
