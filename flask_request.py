@@ -70,6 +70,7 @@ class RequestsSession(object):
         Currently only supports application/json content-types and
         accept types.
 
+        :param url: URL to send request to
         :param method: Name of method string
         :param headers:
             (optional) Number of times to retry request on a bad status code
@@ -107,8 +108,15 @@ class RequestsSession(object):
             response = self.session.request(url=url,
                                             method=method,
                                             data=body,
-                                            timeout=timeout)
-        except requests.exceptions.RetryError as error:
+                                            cookies=cookies,
+                                            files=files,
+                                            auth=auth,
+                                            timeout=timeout,
+                                            allow_redirects=allow_redirects,
+                                            proxies=proxies,
+                                            stream=stream,
+                                            verify=verify)
+        except requests.exceptions.RetryError:
             response = requests.Response()
             response.status_code = 599
             response.reason = "MAX RETRIES"
