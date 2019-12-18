@@ -57,6 +57,10 @@ class RequestsSession(object):
         if not hasattr(app, 'extensions'):
             app.extensions = {}
         app.extensions['request'] = self
+        app.teardown_appcontext(self.teardown)
+
+    def teardown(self, exception):
+        self.session.close()
 
     def http_fetch(self, url, method='GET', headers=None, params=None,
                    data=None, cookies=None, files=None, auth=None,

@@ -1,5 +1,5 @@
 import unittest
-from flask import Flask
+import mock
 
 from tests import fixtures
 
@@ -32,3 +32,11 @@ class TestApplication(unittest.TestCase):
         response = self.test_client.get('/failure')
         self.assertEquals(response.status_code, 599)
         self.assertEquals(response.json['error_response'], 'MAX RETRIES')
+
+    def test_extension_closes_session_after_request(self):
+        with mock.patch('flask_request.RequestsSession.teardown') as teardown:
+            app = fixtures.application()
+            test_client = app.test_client()
+            test_client.get('/success')
+
+            self.assertEquals(teardown.call_count, 1)
