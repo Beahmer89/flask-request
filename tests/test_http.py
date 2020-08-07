@@ -30,8 +30,8 @@ class TestHTTPFetch(unittest.TestCase):
         self.assertIsNone(deserialized_response.get('json'))
 
     def test_unsupported_not_used(self):
-        headers = {'Content-Type': 'text/html'}
         with self.assertRaises(ValueError):
+            headers = {'Content-Type': 'text/html'}
             self.test_class.http_fetch('https://httpbin.org/post',
                                        method='POST', data={'foo': 'bar'},
                                        headers=headers)
